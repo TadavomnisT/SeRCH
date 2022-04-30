@@ -4,7 +4,8 @@
 echo json_encode(
     [
         "status" => "ok" ,
-        "message" => "Hello client"
+        "message" => "Hello client",
+        $_POST
     ]
 );
 

@@ -5,6 +5,11 @@ Proxy format: [ "proxy_type" => "host:port" ]
     Examle:
     $proxy = [ "http" => "127.0.0.1:8585" ];
     $proxy = [ "socks" => "127.0.0.1:9050" ];
+
+Cookie format: 
+    Examle:
+    __test=bd23bf7d18c25c48e75f5a7eaa7cd435; expires=Thu, 31-Dec-37 23:55:55 GMT; path=/
+
 */
 
 
@@ -14,9 +19,10 @@ class Connection_handler {
     
     private $base_url , $proxy , $cookie;
 
-    public function __construct( string $base_url = NULL , $proxy = FALSE ) {
+    public function __construct( string $base_url = NULL , $proxy = FALSE , $cookie = FALSE ) {
         $this->base_url = $base_url;
         $this->proxy = $proxy;
+        $this->cookie = $cookie;
         $this->aes = new AES;
     }
 
@@ -44,17 +50,24 @@ class Connection_handler {
         return $this->cookie;
     }
 
-    public function getBaseUrlContents( ) {
-        return $this->getUrlContents( $this->base_url );
+    public function getBaseUrlContents( $post = [] ) {
+        $content = $this->getUrlContents( $this->base_url , $post );
+        if( strpos( $content , "This site requires Javascript to work, please enable Javascript in your browser or use a browser with Javascript support" ) !== false )
+            $content = $this->bypassJsProtection( $content , $post );
+        return $content;
     }
-
-    public function getUrlContents( string $url ) {
+    
+    public function getUrlContents( string $url , $post = [] ) {
         $ch = curl_init (); 
         curl_setopt ($ch, CURLOPT_URL, $url); 
         if ( isset( $this->proxy["socks"] ) || isset( $this->proxy["http"] ) )
             curl_setopt ($ch, CURLOPT_PROXY, ( isset( $this->proxy["http"] ) ) ? $this->proxy["http"] : $this->proxy["socks"] ); 
         if ( isset( $this->proxy["socks"] ) )
             curl_setopt ($ch, CURLOPT_PROXYTYPE, 7);        
+        if ( $this->getCookie() !== false )
+            curl_setopt ($ch, CURLOPT_HTTPHEADER, array("Cookie: " . $this->getCookie() ));
+        if ( !empty( $post ) )
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $post);
         curl_setopt ($ch, CURLOPT_RETURNTRANSFER, TRUE); 
         curl_setopt ($ch, CURLOPT_FAILONERROR, true); 
         curl_setopt ($ch, CURLOPT_FOLLOWLOCATION, 1); 
@@ -63,26 +76,32 @@ class Connection_handler {
         return $data;
     }
 
-    public function bypassJsProtection( string $html ) {
+    public function bypassJsProtection( string $html , $post = [] ) {
+        $info = $this->fetchInfoToBypassJsProtection( $html );
+        $this->setCookie( $info["cookie"] );
+        return $this->getUrlContents( $info["url"] , $post );
+    }
+
+    public function fetchInfoToBypassJsProtection( string $html ) {
         $a = $this->getInbetweenStrings( "var a=toNumbers(\"" , "\")" , $html );
         $b = $this->getInbetweenStrings( ",b=toNumbers(\"" , "\")" , $html );
         $c = $this->getInbetweenStrings( ",c=toNumbers(\"" , "\")" , $html );
-        $cookie_name = $this->getInbetweenStrings( "document.cookie=\"" , "=\"+toHex" , $html );
         $hash = $this->toHex(
             $this->aes->decrypt(
                 $this->toNumbers($c), 16, 2, $this->toNumbers($a), 16, $this->toNumbers($b)
             )
         );
+        $cookie = $this->getInbetweenStrings( "document.cookie=\"" , "\"+toHex" , $html )
+                . $hash
+                . $this->getInbetweenStrings( "))+\"" , "\"; location" , $html );
         $link = $this->getInbetweenStrings( "location.href=\"" , "\";" , $html );
-        var_dump(
-            $cookie_name,
-            $link,
-            $hash
-        );
+        return [
+            "cookie" => $cookie,
+            "url" => $link
+        ];
     }
 
-    public function getInbetweenStrings ( $start, $end , $string)
-    {
+    public function getInbetweenStrings ( $start, $end , $string) {
         $string = ' ' . $string;
         $ini = strpos($string, $start);
         if ($ini == 0) return '';
