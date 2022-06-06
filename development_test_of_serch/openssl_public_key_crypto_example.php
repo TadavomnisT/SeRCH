@@ -9,7 +9,7 @@
 // 
 // Although we named the object as "$private_key" , but,
 // It is not just private key!
-// In truth, there's a "key-pair" of both public amd private key
+// In truth, there's a "key-pair" of both public and private key
 // generated in that object, but if you pass the object to the functions,
 // it'll behave as "private-key" .
 // In order to fetch "private-key" as an object , you need to either 
