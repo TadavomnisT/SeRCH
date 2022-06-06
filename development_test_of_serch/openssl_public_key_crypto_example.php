@@ -67,6 +67,7 @@ var_dump(
 // (APPROACH#2) :
 
 $private_key = openssl_pkey_new();
+//Save Private Key
 openssl_pkey_export_to_file($private_key, "privatekey.pem");
  
 //Save Public Key
@@ -74,11 +75,48 @@ $dn = array();
 $cert = openssl_csr_new($dn, $private_key);
 $cert = openssl_csr_sign($cert, null, $private_key, 365);
 openssl_x509_export_to_file($cert, "publickey.pem");
- 
- 
-$data = "This is a secret message";
-$isvalid = openssl_public_encrypt ($data, $encrypted , file_get_contents("publickey.pem"),OPENSSL_PKCS1_PADDING);	
-echo "Data encryption : ".$encrypted;
+// Or you can store the PEM representation directly.
+
+$public_key = file_get_contents("publickey.pem");
+
+$plain_data = "This is a secret message";
+
+// Test #1
+// Encrypt with private-key
+// Only dectryptable with public-key------------------------------------------
+
+$cipher_data = "";
+$deciphered_data = "";
+
+$state_1 = openssl_private_encrypt($plain_data, $cipher_data, $private_key);
+$state_2 = openssl_public_decrypt($cipher_data, $deciphered_data, $public_key);
+
+var_dump(
+    $state_1,
+    $state_2,
+    $cipher_data,
+    $deciphered_data
+);
+
+// Test #2
+// Encrypt with public-key
+// Only dectryptable with private-key------------------------------------------
+
+$cipher_data = "";
+$deciphered_data = "";
+
+$state_1 = openssl_public_encrypt($plain_data, $cipher_data, $public_key);
+$state_2 = openssl_private_decrypt($cipher_data, $deciphered_data, $private_key);
+
+var_dump(
+    $state_1,
+    $state_2,
+    $cipher_data,
+    $deciphered_data
+);
+
+
+// ------------------------------------------------------------------------------------
 
 
 ?>
