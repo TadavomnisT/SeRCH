@@ -242,12 +242,58 @@ In summary:
 
 
 ////////////////////////////////////////////////////////////////////////////////////
-
+    
 
 So... what should we do?!
 
 
 */
+
+// Testing AES-256 , on CBC mod , with 256 bit key 
+// -----------------------------------------------
+
+
+//Define cipher 
+$cipher = "aes-256-cbc"; 
+
+//Generate a 256-bit encryption key 
+$encryption_key = openssl_random_pseudo_bytes(32); 
+
+// Generate an initialization vector 
+$iv_size = openssl_cipher_iv_length($cipher); 
+$iv = openssl_random_pseudo_bytes($iv_size); 
+
+//Data to encrypt 
+$data = "This is a secret message"; 
+$encrypted_data = openssl_encrypt($data, $cipher, $encryption_key, 0, $iv); 
+
+echo "Encrypted Data (256 bit key) : " . $encrypted_data . PHP_EOL ; 
+
+
+
+// Testing AES-256 , on CBC mod , with 512 bit key 
+// -----------------------------------------------
+
+
+//Define cipher 
+$cipher = "aes-256-cbc"; 
+
+//Generate a 256-bit encryption key 
+$encryption_key = openssl_random_pseudo_bytes(64); 
+
+// Generate an initialization vector 
+$iv_size = openssl_cipher_iv_length($cipher); 
+$iv = openssl_random_pseudo_bytes($iv_size); 
+
+//Data to encrypt 
+$data = "This is a secret message"; 
+$encrypted_data = openssl_encrypt($data, $cipher, $encryption_key, 0, $iv); 
+
+echo "Encrypted Data (512 bit key) : " . $encrypted_data . PHP_EOL ; 
+
+// -----------------------------------------------
+// Probably, AES make a 256 bit digest of every key greater than 256 bits...
+// -----------------------------------------------
 
 
 ?>
