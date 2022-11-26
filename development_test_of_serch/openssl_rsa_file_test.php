@@ -121,8 +121,10 @@ var_dump(
 
 $input = fopen("xxx.png",'r');
 $output = fopen("xxx.enc",'w');
-while (!feof($input)) {
-    $buffer = fgets($input, 64);
+while (true) {
+    $buffer = fread($input, 64);
+    if (strlen($buffer) == 0)
+        break;
     $result = openssl_public_encrypt($buffer, $cipher_data, $public_key , OPENSSL_PKCS1_PADDING);
     var_dump(
         $result,
@@ -137,8 +139,10 @@ fclose( $output );
 
 $input = fopen("xxx.enc",'r');
 $output = fopen("xxx.dec",'w');
-while (!feof($input)) {
-    $buffer = fgets($input, 256);
+while (true) {
+    $buffer = fread($input, 256);
+    if (strlen($buffer) == 0)
+        break;
     $result = openssl_private_decrypt($buffer, $deciphered_data, $private_key , OPENSSL_PKCS1_PADDING);
     var_dump(
         $result,
