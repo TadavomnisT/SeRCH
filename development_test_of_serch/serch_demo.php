@@ -32,8 +32,22 @@ class SeRCH
                     break;
                 else echo PHP_EOL . "[*]ERROR: Passwords doesn't match! Try again." . PHP_EOL . PHP_EOL;
             }
-            $this->private_key = openssl_pkey_new();
-            openssl_pkey_export( $this->private_key , $private_key_pem);
+            // Added by: @awohsen, see: https://github.com/TadavomnisT/SeRCH/issues/3
+            $key_options = [
+                "private_key_bits" => 2048,
+                "private_key_type" => OPENSSL_KEYTYPE_RSA,
+            ];
+            if ($_ENV["OPENSSL_CONF"])
+                $key_options["config"] = $_ENV["OPENSSL_CONF"]; //path to openssl.cnf
+            $this->private_key = openssl_pkey_new($key_options);
+            if (!$this->private_key) {
+                print_r(openssl_error_string());
+                die("Cant create session key pairs!");
+            }
+            if (!openssl_pkey_export($this->private_key, $private_key_pem, null, $key_options)){
+                print_r(openssl_error_string());
+                die("Cant create session key pairs!");
+            }
             $this->public_key = openssl_pkey_get_details($this->private_key)['key'];
             $data = json_encode(["private" => $private_key_pem, "public" => $this->public_key]);
             $cipher = "aes-256-cbc"; 
